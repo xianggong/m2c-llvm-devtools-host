@@ -1,0 +1,17 @@
+        
+        /* Create and allocate host buffers */
+        size_t num_elem = NUM_ELEM;
+        SRC_BUFFER_INIT
+        /* Create host dst buffer */
+        HOST_DST_DATA_TYPE *dst_host_buffer;
+        dst_host_buffer = malloc(num_elem * sizeof(HOST_DST_DATA_TYPE));
+        memset((void *)dst_host_buffer, 1, num_elem * sizeof(HOST_DST_DATA_TYPE));
+
+        /* Create device dst buffer */
+        cl_mem dst_device_buffer;
+        dst_device_buffer = clCreateBuffer(context, CL_MEM_WRITE_ONLY, num_elem *sizeof(HOST_DST_DATA_TYPE), NULL, &ret);
+        if (ret != CL_SUCCESS)
+        {
+                printf("error: could not create dst buffer\n");
+                exit(1);
+        }

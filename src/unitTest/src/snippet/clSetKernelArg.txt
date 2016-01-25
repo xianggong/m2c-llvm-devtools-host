@@ -1,0 +1,1 @@
+        ret |= clSetKernelArg(kernel, SRC_IDX, sizeof(cl_mem), &src_SRC_IDX_device_buffer);

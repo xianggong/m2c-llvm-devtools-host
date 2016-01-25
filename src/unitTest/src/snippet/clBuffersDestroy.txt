@@ -1,0 +1,12 @@
+
+        /* Free host dst buffer */
+        free(dst_host_buffer);
+
+        /* Free device dst buffer */
+        ret = clReleaseMemObject(dst_device_buffer);
+        if (ret != CL_SUCCESS)
+        {
+                printf("error: call to 'clReleaseMemObject' failed\n");
+                exit(1);
+        }
+        SRC_BUFFER_DESTROY

@@ -1,0 +1,66 @@
+
+        /* Program binary */
+        unsigned char *bin;
+        size_t bin_len;
+        cl_int bin_ret;
+        
+        /* Read program binary */
+        if (argc == 2)
+                bin = read_buffer((char *)argv[1], &bin_len);
+        else
+        {
+                printf("error: No binary specified\n");
+                exit(1);
+        }
+        
+        /* Create a program */
+        cl_program program;
+        program = clCreateProgramWithBinary(context, 1, &device, &bin_len, (const unsigned char **)&bin, &bin_ret, &ret);
+        if (ret != CL_SUCCESS)
+        {
+                printf("error: call to 'clCreateProgramWithBinary' failed\n");
+                exit(1);
+        }
+        if (bin_ret != CL_SUCCESS)
+        {
+                printf("error: Invalid binary for device\n");
+                exit(1);
+        }
+        printf("program=%p\n", program);
+        
+        /* Free binary */
+        free(bin);
+        
+        printf("program binary loaded\n");
+        printf("\n");
+
+        ret = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+        if (ret != CL_SUCCESS )
+        {
+                size_t size;
+                char *log;
+
+                /* Get log size */
+                clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,0, NULL, &size);
+
+                /* Allocate log and print */
+                log = malloc(size);
+                clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG,size, log, NULL);
+                printf("error: call to 'clBuildProgram' failed:\n%s\n", log);
+                
+                /* Free log and exit */
+                free(log);
+                exit(1);
+        }
+
+        printf("program built\n");
+        printf("\n");
+        
+        /* Create a Kernel Object*/
+        cl_kernel kernel;
+        kernel = clCreateKernel(program, "KERNEL_NAME", &ret);
+        if (ret != CL_SUCCESS)
+        {
+                printf("error: call to 'clCreateKernel' failed\n");
+                exit(1);
+        }
