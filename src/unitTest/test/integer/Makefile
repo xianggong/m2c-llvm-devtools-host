@@ -1,5 +1,5 @@
 SUBDIRS := $(wildcard */.)  # e.g. "foo/. bar/."
-TARGETS := all run_native clean deepclean # whatever else, but must not contain '/'
+TARGETS := all clean deepclean # whatever else, but must not contain '/'
 
 # foo/.all bar/.all foo/.clean bar/.clean
 SUBDIRS_TARGETS := \
