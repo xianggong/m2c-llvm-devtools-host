@@ -1,4 +1,8 @@
 include ../Makefile.com
+include ./benchmark.ini
+
+config_files=$(shell ls ../../../conf/)
+CONF="default"
 
 all: BoxFilter BoxFilter_ntv
 
@@ -9,54 +13,68 @@ BoxFilter_ntv: *.cpp
 	$(CXX) $? -m32 $(INC) -o $@ -lm -lpthread -lOpenCL
 
 run:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim functional ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim functional ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 rundt:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim detailed ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim detailed ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 rundtcf:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 runtrace:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace BoxFilter.gz --si-report si.rpt --mem-report mem.rpt ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace $(CONF)_BoxFilter_Kernels_$(WORKLEN).gz --si-report $(CONF)_si_$(WORKLEN).rpt --mem-report $(CONF)_mem_$(WORKLEN).rpt ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 runsched:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim functional ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim functional ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 runscheddt:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim detailed ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim detailed ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 runscheddtcf:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 runschedtrace:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace BoxFilter_sched.gz --si-report sisched.rpt --mem-report memsched.rpt ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace $(CONF)_BoxFilter_Kernels_sched_$(WORKLEN).gz --si-report $(CONF)_si_$(WORKLEN).rpt --mem-report $(CONF)_mem_$(WORKLEN).rpt ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
+
+runfusion:
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_fusion.bin $(M2S_BIN) --si-sim functional ./BoxFilter -q $(RUNOPT) -x $(WORKLEN)
+
+runfusiondt:
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_fusion.bin $(M2S_BIN) --si-sim detailed ./BoxFilter -q $(RUNOPT) -x $(WORKLEN)
+
+runfusiondtcf:
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_fusion.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./BoxFilter -q $(RUNOPT) -x $(WORKLEN)
+
+runfusiontrace:
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_fusion.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace $(CONF)_BoxFilter_Kernels_fusion_$(WORKLEN).gz --si-report $(CONF)_si_$(WORKLEN).rpt --mem-report $(CONF)_mem_$(WORKLEN).rpt ./BoxFilter -q $(RUNOPT) -x $(WORKLEN)
 
 scale:
-	rm -f debug.scale; \
-        len=1 ; while [[ $$len -le 4096 ]] ; do \
-                echo $$len ; \
-                echo "default:" ; \
-                M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim detailed ./BoxFilter -q -e -x $$len 2>&1 | grep "Cycles =" ; \
-                echo "sisched:" ; \
-                M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim detailed ./BoxFilter -q -e -x $$len 2>&1 | grep "Cycles =" ; \
+	len=$(MIN_LEN) ; while [[ $$len -le $(MAX_LEN) ]] ; do \
+                $(MAKE) runtrace RUNOPT= WORKLEN=$$len ; \
+                $(MAKE) runschedtrace RUNOPT= WORKLEN=$$len ; \
+                $(MAKE) runfusiontrace RUNOPT= WORKLEN=$$len ; \
                 ((len = len * 2 )); \
+        done
+
+scaleconf:
+	for conf in $(config_files); do \
+                $(MAKE) scale SI_CONFIG=../../../conf/$$conf/si-config MEM_CONFIG=../../../conf/$$conf/mem-config CONF=$$conf; \
         done
 
 rnt:
 	./BoxFilter_ntv -e 
 
 isa:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim functional --si-debug-isa debug.isa ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels.bin $(M2S_BIN) --si-sim functional --si-debug-isa debug.isa ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 isasched:
-	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim functional --si-debug-isa debug.sched.isa ./BoxFilter -q -e 
+	M2S_OPENCL_BINARY=$(PWD)/BoxFilter_Kernels_sched.bin $(M2S_BIN) --si-sim functional --si-debug-isa debug.sched.isa ./BoxFilter -q $(RUNOPT) -x $(WORKLEN) 
 
 disasm:
 	$(M2S_BIN) --si-disasm $(PWD)/BoxFilter_Kernels.bin
 
 clean:
-	rm -rf BoxFilter BoxFilter_ntv
+	rm -rf BoxFilter BoxFilter_ntv *.isa *.log debug* *.rpt *.gz
 
 deepclean:
-	rm -rf BoxFilter BoxFilter_ntv *.bin *.isa *.log debug*
+	rm -rf BoxFilter BoxFilter_ntv *.bin *.isa *.log debug* *.rpt *.gz

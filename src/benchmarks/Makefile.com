@@ -9,3 +9,5 @@ LD = -L $(M2S_LIB) -ldl -lrt -pthread -lm -l:libm2s-opencl.a
 
 SI_CONFIG = /home/xgong/multi2sim-4.2/samples/southern-islands/7970/si-config
 MEM_CONFIG = /home/xgong/multi2sim-4.2/samples/southern-islands/7970/mem-config
+
+CONFIG_DIRS = ls -d ../../../conf
