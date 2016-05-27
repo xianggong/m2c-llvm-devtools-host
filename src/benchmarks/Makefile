@@ -1,21 +1,67 @@
-SUBDIRS := $(wildcard */.)  # e.g. "foo/. bar/."
-TARGETS := all clean deepclean # whatever else, but must not contain '/'
+SUBDIRS = \
+	AtomicCounters \
+	BasicDebug \
+	BinarySearch \
+	BinomialOption \
+	BinomialOptionMultiGPU \
+	BitonicSort \
+	BlackScholes \
+	BlackScholesDP \
+	BoxFilter \
+	DCT \
+	DeviceFission11Ext \
+	DwtHaar1D \
+	FastWalshTransform \
+	FloydWarshall \
+	HelloWorld \
+	Histogram \
+	LUDecomposition \
+	MatrixMultiplication \
+	MatrixTranspose \
+	MemoryModel \
+	MonteCarloAsian \
+	MonteCarloAsianDP \
+	MonteCarloAsianMultiGPU \
+	PrefixSum \
+	QuasiRandomSequence \
+	RadixSort \
+	RecursiveGaussian \
+	Reduction \
+	ScanLargeArrays \
+	SimpleConvolution \
+	SimpleMultiDevice \
+	SobelFilter \
+	StringSearch \
+	Template \
+	URNG \
+	VectorAddition
 
-# foo/.all bar/.all foo/.clean bar/.clean
-SUBDIRS_TARGETS := \
-    $(foreach t,$(TARGETS),$(addsuffix $t,$(SUBDIRS)))
+all: premake
 
-.PHONY : $(TARGETS) $(SUBDIRS_TARGETS)
+M2S_ROOT = $(HOME)/Develop/multi2sim42
+M2S_LIB = $(M2S_ROOT)/lib/.libs
+M2S_BIN = $(M2S_ROOT)/bin
+M2S_INCLUDE = $(M2S_ROOT)/runtime/include
 
-# static pattern rule, expands into:
-# all clean : % : foo/.% bar/.%
-$(TARGETS) : % : $(addsuffix %,$(SUBDIRS))
-	@echo 'Done "$*" target'
+CFLAGS = "-I../include -I../include/SDKUtil -I. -I$(M2S_INCLUDE) -g"
+LDFLAGS_STATIC = "-L$(M2S_LIB) -lm2s-opencl -lpthread -ldl -lrt -static -m32"
+LDFLAGS_DYNAMIC = "-L$(M2S_LIB) -lm2s-opencl -lpthread -ldl -lrt -m32"
 
-# here, for foo/.all:
-#   $(@D) is foo
-#   $(@F) is .all, with leading period
-#   $(@F:.%=%) is just all
-$(SUBDIRS_TARGETS) :
-	$(MAKE) -C $(@D) $(@F:.%=%)
+clean:
+	for subdir in $(SUBDIRS); do \
+		make -C $$subdir clean || exit 1; \
+	done
 
+premake:
+	make -C $(M2S_ROOT)/runtime/opencl
+	for subdir in $(SUBDIRS); do \
+		make -C $$subdir \
+			M2S_ROOT=$(M2S_ROOT) \
+			M2S_LIB=$(M2S_LIB) \
+			M2S_BIN=$(M2S_BIN) \
+			M2S_INCLUDE=$(M2S_INCLUDE) \
+			CFLAGS=$(CFLAGS) \
+			LDFLAGS_STATIC=$(LDFLAGS_STATIC) \
+			LDFLAGS_DYNAMIC=$(LDFLAGS_DYNAMIC) \
+			|| exit 1; \
+	done

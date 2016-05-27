@@ -1,80 +1,23 @@
-include ../Makefile.com
-include ./benchmark.ini
+M2S_LIBOPENCL = $(M2S_LIB)/libm2s-opencl.so
 
-config_files=$(shell ls ../../../conf/)
-CONF="default"
+BENCHMARK_NAME = MatrixTranspose
+BENCHMARKS_ROOT = ..
 
-all: MatrixTranspose MatrixTranspose_ntv
+PROGRAM_BINARY_DYNAMIC = $(BENCHMARK_NAME)_dynamic
+PROGRAM_BINARY_STATIC = $(BENCHMARK_NAME)_static
+KERNEL_SOURCES = $(BENCHMARK_NAME)_Kernels.cl
 
-MatrixTranspose: *.cpp 
-	$(CXX) $? -m32 $(INC) -o $@ $(LD)
-
-MatrixTranspose_ntv: *.cpp 
-	$(CXX) $? -m32 $(INC) -o $@ -lm -lpthread -lOpenCL
-
-run:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels.bin $(M2S_BIN) --si-sim functional ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-rundt:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels.bin $(M2S_BIN) --si-sim detailed ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-rundtcf:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-runtrace:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace $(CONF)_MatrixTranspose_Kernels_$(WORKLEN).gz --si-report $(CONF)_si_$(WORKLEN).rpt --mem-report $(CONF)_mem_$(WORKLEN).rpt ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-runsched:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_sched.bin $(M2S_BIN) --si-sim functional ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-runscheddt:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_sched.bin $(M2S_BIN) --si-sim detailed ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-runscheddtcf:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_sched.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-runschedtrace:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_sched.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace $(CONF)_MatrixTranspose_Kernels_sched_$(WORKLEN).gz --si-report $(CONF)_si_$(WORKLEN).rpt --mem-report $(CONF)_mem_$(WORKLEN).rpt ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-runfusion:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_fusion.bin $(M2S_BIN) --si-sim functional ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN)
-
-runfusiondt:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_fusion.bin $(M2S_BIN) --si-sim detailed ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN)
-
-runfusiondtcf:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_fusion.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN)
-
-runfusiontrace:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_fusion.bin $(M2S_BIN) --si-sim detailed --si-config $(SI_CONFIG) --mem-config $(MEM_CONFIG) --trace $(CONF)_MatrixTranspose_Kernels_fusion_$(WORKLEN).gz --si-report $(CONF)_si_$(WORKLEN).rpt --mem-report $(CONF)_mem_$(WORKLEN).rpt ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN)
-
-scale:
-	len=$(MIN_LEN) ; while [[ $$len -le $(MAX_LEN) ]] ; do \
-                $(MAKE) runtrace RUNOPT= WORKLEN=$$len ; \
-                $(MAKE) runschedtrace RUNOPT= WORKLEN=$$len ; \
-                $(MAKE) runfusiontrace RUNOPT= WORKLEN=$$len ; \
-                ((len = len * 2 )); \
-        done
-
-scaleconf:
-	for conf in $(config_files); do \
-                $(MAKE) scale SI_CONFIG=../../../conf/$$conf/si-config MEM_CONFIG=../../../conf/$$conf/mem-config CONF=$$conf; \
-        done
-
-rnt:
-	./MatrixTranspose_ntv -e 
-
-isa:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels.bin $(M2S_BIN) --si-sim functional --si-debug-isa debug.isa ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-isasched:
-	M2S_OPENCL_BINARY=$(PWD)/MatrixTranspose_Kernels_sched.bin $(M2S_BIN) --si-sim functional --si-debug-isa debug.sched.isa ./MatrixTranspose -q $(RUNOPT) -x $(WORKLEN) 
-
-disasm:
-	$(M2S_BIN) --si-disasm $(PWD)/MatrixTranspose_Kernels.bin
+all: $(PROGRAM_BINARY_STATIC) $(PROGRAM_BINARY_DYNAMIC) ini
 
 clean:
-	rm -rf MatrixTranspose MatrixTranspose_ntv *.isa *.log debug* *.rpt *.gz
+	rm -f benchmark.ini $(BENCHMARK_NAME) $(PROGRAM_BINARY_DYNAMIC) $(PROGRAM_BINARY_STATIC)
 
-deepclean:
-	rm -rf MatrixTranspose MatrixTranspose_ntv *.bin *.isa *.log debug* *.rpt *.gz
+$(PROGRAM_BINARY_STATIC): *.cpp $(M2S_LIBOPENCL)
+	$(CXX) $(CFLAGS) *.cpp -o $(PROGRAM_BINARY_STATIC) $(LDFLAGS_STATIC)
+
+$(PROGRAM_BINARY_DYNAMIC): *.cpp $(M2S_LIBOPENCL)
+	$(CXX) $(CFLAGS) *.cpp -o $(PROGRAM_BINARY_DYNAMIC) $(LDFLAGS_DYNAMIC)
+
+ini:    
+	if [ -a $(BENCHMARK_NAME)_Kernels.bin ]; then echo '$(PWD)/$(PROGRAM_BINARY_STATIC) --load $(BENCHMARK_NAME)_Kernels.bin -q -e' > benchmark.ini; fi;
+

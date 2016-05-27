@@ -1,9 +1,9 @@
 AMDAPPSDK_ROOT = /opt/AMDAPP/
-M2S_ROOT = /home/xgong/multi2sim-4.2
-M2C_CC = $(M2S_ROOT)/bin/m2c
+M2S_ROOT = /home/xgong/m2s50/multi2sim
+M2C_CC = /home/xgong/Develop/multi2sim/bin/m2c
 M2S_LIB= $(M2S_ROOT)/lib/.libs
-AMD_CC = /home/xgong/multi2sim-4.2/bin/m2c
-M2S = /home/xgong/multi2sim-4.2/bin/m2s
+AMD_CC = /home/xgong/Develop/multi2sim/bin/m2c
+M2S = /home/xgong/m2s50/multi2sim/bin/m2s
 
 CC = gcc
 CC_FLAG = -Werror -Wall -g -std=c99
